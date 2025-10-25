@@ -6,8 +6,4 @@ FROM tomcat:9.0
 EXPOSE 8080
 
 # The base Tomcat image is usually sufficient. 
-# We rely on 'docker cp' from Jenkins to move the WAR file, 
-# so no ADD or COPY commands are needed here for the application code.
-
-# Command to run Tomcat (inherited from base image, included for clarity)
-CMD ["catalina.sh", "run"]
+# We rely on 'docker cp' from Jenkins to move the WAR file.
