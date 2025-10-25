@@ -21,7 +21,8 @@ pipeline {
         TOMCAT_WEBAPPS = '/usr/local/tomcat/webapps'
         
         // --- Git Variables ---
-        GIT_URL = 'https://github.com/Aditi012345/myjavaapp/tree/main/src/main/webapp.git' // NOTE: Update this URL if needed
+        // FIX: This must be the SIMPLE root URL of the repository.
+        GIT_URL = 'https://github.com/Aditi012345/myjavaapp' 
         GIT_BRANCH = 'main'
     }
 
@@ -29,6 +30,7 @@ pipeline {
         stage('1. Checkout Code') {
             steps {
                 echo "Cloning source code from ${env.GIT_URL}"
+                // The git step clones the root of the repository specified here:
                 git branch: env.GIT_BRANCH, url: env.GIT_URL
             }
         }
@@ -36,7 +38,6 @@ pipeline {
         stage('2. Maven Build (Package WAR)') {
             steps {
                 echo 'Building WAR file with Maven...'
-                // Clean removes previous builds; package creates the WAR file
                 bat 'mvn clean package' 
             }
         }
