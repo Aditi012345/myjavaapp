@@ -45,8 +45,13 @@ pipeline {
         stage('3. Docker Build') {
             steps {
                 echo "Building Tomcat Docker image: ${env.DOCKER_IMAGE}"
-                // Build the custom Docker image using the Dockerfile in the subfolder
-                bat "docker build -t ${env.DOCKER_IMAGE} ${env.DOCKER_CONTEXT}"
+                
+                // IMPORTANT: Use the 'dir' step to move into the tomcat-docker subfolder 
+                // so the 'docker build' command can find the Dockerfile locally.
+                dir("${env.DOCKER_CONTEXT}") {
+                    // We run the build command using the current directory (.) as the context.
+                    bat "docker build -t ${env.DOCKER_IMAGE} ."
+                }
             }
         }
 
