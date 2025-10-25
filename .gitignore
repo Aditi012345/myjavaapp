@@ -1,0 +1,12 @@
+Maven
+
+target/
+pom.xml.tag
+pom.xml.next
+pom.xml.bak
+release.properties
+releaseArguments.properties
+
+Jenkins
+
+*.tmp
