@@ -33,13 +33,13 @@ pipeline {
             }
         }
 
-        stage('3. Docker Build') {
+       stage('3. Docker Build') {
             steps {
                 echo "Building Tomcat Docker image: ${env.DOCKER_IMAGE}"
                 
-                // REMOVE THE 'dir' STEP.
-                // Run this command from the workspace root (where the subfolder exists).
-                bat "docker build -t ${env.DOCKER_IMAGE} ${env.DOCKER_CONTEXT}/" 
+                // FINAL FIX ATTEMPT: Use the Windows WORKSPACE variable 
+                // to provide the full absolute path, forcing Docker client to resolve it.
+                bat 'docker build -t %DOCKER_IMAGE% %WORKSPACE%\\%DOCKER_CONTEXT%'
             }
         }
 
