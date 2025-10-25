@@ -37,9 +37,8 @@ pipeline {
             steps {
                 echo "Building Tomcat Docker image: ${env.DOCKER_IMAGE}"
                 
-                // **FIXED:** Removed the problematic 'dir' step.
-                // Now running from the workspace root and explicitly giving the Docker context path 
-                // with a trailing slash to resolve Windows pathing issues.
+                // REMOVE THE 'dir' STEP.
+                // Run this command from the workspace root (where the subfolder exists).
                 bat "docker build -t ${env.DOCKER_IMAGE} ${env.DOCKER_CONTEXT}/" 
             }
         }
