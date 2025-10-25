@@ -4,8 +4,8 @@ pipeline {
     environment {
         // Define the name of your compiled application artifact
         ARTIFACT_NAME = 'myapp-1.0-SNAPSHOT.jar' // Standard Maven default
-        // Define the GitHub repository to clone
-        GIT_URL = 'https://github.com/Aditi012345/mydockerapp' 
+        // THIS IS THE LINE TO FIX! Point it to the repository with the pom.xml
+        GIT_URL = 'https://github.com/Aditi012345/myjavaapp' 
         GIT_BRANCH = 'main'
     }
 
