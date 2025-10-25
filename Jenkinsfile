@@ -4,7 +4,7 @@ pipeline {
     environment {
         // Define the name of your compiled application artifact
         ARTIFACT_NAME = 'myapp-1.0-SNAPSHOT.jar' // Standard Maven default
-        // THIS IS THE LINE TO FIX! Point it to the repository with the pom.xml
+        // Define the GitHub repository URL
         GIT_URL = 'https://github.com/Aditi012345/myjavaapp' 
         GIT_BRANCH = 'main'
     }
@@ -22,7 +22,6 @@ pipeline {
             steps {
                 echo 'Cleaning and building Java application with Maven...'
                 // Assumes 'mvn' command is available on the Windows agent's PATH.
-                // 'clean package' will compile, run tests, and package the JAR.
                 bat 'mvn clean package' 
             }
         }
@@ -38,13 +37,12 @@ pipeline {
             steps {
                 echo "Running the compiled application: target/${env.ARTIFACT_NAME}"
                 
-                // Uses start /b to run the java process in the background, 
-                // allowing the Jenkins bat step to complete.
-                // timeout /t 5 is used to wait 5 seconds before the Jenkins job finishes.
+                // FIX: Replaced 'timeout /t 5' with a more stable 'ping' loop
+                // The ping loop provides a reliable 5-second delay on Windows without input redirection issues.
                 bat """
                     echo Starting Java application...
                     start /b java -jar target/${env.ARTIFACT_NAME}
-                    timeout /t 5
+                    ping 127.0.0.1 -n 6 > nul
                     echo Application started (check console output for the output).
                 """
             }
