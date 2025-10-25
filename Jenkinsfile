@@ -2,10 +2,26 @@ pipeline {
     agent any
 
     environment {
-        // Define the name of your compiled application artifact
-        ARTIFACT_NAME = 'myapp-1.0-SNAPSHOT.jar' // Standard Maven default
-        // Define the GitHub repository URL
-        GIT_URL = 'https://github.com/Aditi012345/myjavaapp' 
+        // --- Deployment Variables ---
+        // Match the artifactId from pom.xml and the desired WAR name
+        APP_NAME = 'mywebapp2'
+        // WAR file path after Maven build
+        WAR_PATH = "target/${APP_NAME}.war" 
+        // Docker image name for Tomcat
+        DOCKER_IMAGE = 'mytomcat2:9.0'
+        // Docker container name
+        CONTAINER_NAME = 'tomcat2' 
+        // Tomcat internal port (standard)
+        TOMCAT_INTERNAL_PORT = '8080'
+        // Host exposed port (must match your requirement, 9091)
+        HOST_EXPOSED_PORT = '9091'
+        // Path to the Dockerfile subfolder
+        DOCKER_CONTEXT = 'tomcat-docker'
+        // Target deployment path inside Tomcat
+        TOMCAT_WEBAPPS = '/usr/local/tomcat/webapps'
+        
+        // --- Git Variables ---
+        GIT_URL = 'https://github.com/Aditi012345/myjavaapp/tree/main/src/main/webapp.git' // NOTE: Update this URL if needed
         GIT_BRANCH = 'main'
     }
 
@@ -13,52 +29,57 @@ pipeline {
         stage('1. Checkout Code') {
             steps {
                 echo "Cloning source code from ${env.GIT_URL}"
-                // Use default SCM configuration which typically uses Git installed on the agent
                 git branch: env.GIT_BRANCH, url: env.GIT_URL
             }
         }
 
-        stage('2. Build and Package (Maven)') {
+        stage('2. Maven Build (Package WAR)') {
             steps {
-                echo 'Cleaning and building Java application with Maven...'
-                // Assumes 'mvn' command is available on the Windows agent's PATH.
+                echo 'Building WAR file with Maven...'
+                // Clean removes previous builds; package creates the WAR file
                 bat 'mvn clean package' 
             }
         }
 
-        stage('3. Run Tests') {
-            // Maven runs tests during the 'package' goal, but you can add specific reporting here.
+        stage('3. Docker Build') {
             steps {
-                echo 'Tests executed as part of the package phase. Skipping separate test execution stage.'
+                echo "Building Tomcat Docker image: ${env.DOCKER_IMAGE}"
+                // Build the custom Docker image using the Dockerfile in the subfolder
+                bat "docker build -t ${env.DOCKER_IMAGE} ${env.DOCKER_CONTEXT}"
             }
         }
 
-        stage('4. Execute Application') {
+        stage('4. Docker Deploy & Run') {
             steps {
-                echo "Running the compiled application: target/${env.ARTIFACT_NAME}"
-                
-                // FIX: Replaced 'timeout /t 5' with a more stable 'ping' loop
-                // The ping loop provides a reliable 5-second delay on Windows without input redirection issues.
-                bat """
-                    echo Starting Java application...
-                    start /b java -jar target/${env.ARTIFACT_NAME}
-                    ping 127.0.0.1 -n 6 > nul
-                    echo Application started (check console output for the output).
-                """
+                echo "Removing old container ${env.CONTAINER_NAME} if it exists..."
+                // Stop and remove the old container, suppressing failure if it doesn't exist
+                bat "docker rm -f ${env.CONTAINER_NAME} || echo 'No old container to remove.'"
+
+                echo "Running new Tomcat container on port ${env.HOST_EXPOSED_PORT}:${env.TOMCAT_INTERNAL_PORT}"
+                // Run the new container, mapping the host port 9091 to the container's 8080
+                bat "docker run -d --name ${env.CONTAINER_NAME} -p ${env.HOST_EXPOSED_PORT}:${env.TOMCAT_INTERNAL_PORT} ${env.DOCKER_IMAGE}"
+            }
+        }
+        
+        stage('5. Deploy WAR to Tomcat') {
+            steps {
+                echo "Copying ${env.WAR_PATH} into running container ${env.CONTAINER_NAME}"
+                // Copy the WAR file from the Jenkins workspace into the Tomcat webapps directory
+                bat "docker cp ${env.WAR_PATH} ${env.CONTAINER_NAME}:${env.TOMCAT_WEBAPPS}/"
+
+                echo 'Restarting Tomcat container to deploy the WAR file...'
+                // Restart Tomcat to force immediate deployment of the new WAR file
+                bat "docker restart ${env.CONTAINER_NAME}"
             }
         }
     }
 
     post {
         success {
-            echo "SUCCESS: Java application pipeline completed successfully!"
+            echo "SUCCESS: Deployment complete. Access app at http://localhost:${env.HOST_EXPOSED_PORT}/${env.APP_NAME}/"
         }
         failure {
-            echo "FAILURE: Java build or test failed. Check the Maven output."
-        }
-        always {
-            // Cleanup step
-            bat 'echo Pipeline execution finished.'
+            echo "FAILURE: Pipeline failed during build or deployment stages."
         }
     }
 }
